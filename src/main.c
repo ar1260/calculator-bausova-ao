@@ -1,178 +1,345 @@
+#include <ctype.h>
+#include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include <ctype.h>
 #include <string.h>
 
 #define EXP_LEN 1024
+#define MIN_VALUE -2000000000
+#define MAX_VALUE 2000000000
 
 typedef struct Node {
-   int value;
-   struct Node* next;
+    union {
+        long int intValue;
+        double floatValue;
+    } value;
+    bool isFloat;
+    struct Node* next;
 } Node;
 
 typedef struct {
-   Node* top;
+    Node* top;
 } Stack;
 
-Stack* createStack() {
-   Stack* s = (Stack*)malloc(sizeof(Stack));
-   if (s == NULL) {
-      printf("Malloc error\n");
-      exit(0);
-   }
-   s->top = NULL;
-   return s;
+Stack* createStack()
+{
+    Stack* s = (Stack*)malloc(sizeof(Stack));
+    if (s == NULL) {
+        printf("Malloc error\n");
+        exit(-4);
+    }
+    s->top = NULL;
+    return s;
 }
 
-bool IsEmpty(Stack* s) {
-   return s->top == NULL;
+bool IsEmpty(Stack* s)
+{
+    return s->top == NULL;
 }
 
-void push(Stack* s, int value) {
-   Node* newNode = (Node*)malloc(sizeof(Node));
-   if (newNode == NULL) {
-      printf("Malloc error\n");
-      exit(0);
-   }
-   newNode->value = value;
-   newNode->next = s->top;
-   s->top = newNode;
+void pushInt(Stack* s, long int value)
+{
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    if (newNode == NULL) {
+        printf("Malloc error\n");
+        exit(-4);
+    }
+    newNode->value.intValue = value;
+    newNode->isFloat = false;
+    newNode->next = s->top;
+    s->top = newNode;
 }
 
-int pop(Stack* s) {
-   if (IsEmpty(s)) {
-      printf("Empty stack\n");
-      return 0;
-   }
-   Node* temp = s->top;
-   int value = temp->value;
-   s->top = s->top->next;
-   free(temp);
-   return value;
+void pushFloat(Stack* s, double value)
+{
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    if (newNode == NULL) {
+        printf("Malloc error\n");
+        exit(-4);
+    }
+    newNode->value.floatValue = value;
+    newNode->isFloat = true;
+    newNode->next = s->top;
+    s->top = newNode;
 }
 
-int top(Stack* s) {
-   if (IsEmpty(s)) {
-      printf("Empty stack\n");
-      return 0;
-   }
-   return s->top->value;
+long int popInt(Stack* s)
+{
+    if (IsEmpty(s)) {
+        printf("Incorrect input (operators)\n");
+        exit(-3);
+    }
+    Node* temp = s->top;
+    long int value = temp->value.intValue;
+    s->top = s->top->next;
+    free(temp);
+    return value;
 }
 
-int precedence(char op) {
-   if (op == '+' || op == '-') {
-      return 1;
-   }
-   if (op == '*' || op == '/') {
-      return 2;
-   }
-   return 0;
+double popFloat(Stack* s)
+{
+    if (IsEmpty(s)) {
+        printf("Incorrect input (operators)\n");
+        exit(-3);
+    }
+    Node* temp = s->top;
+    double value = temp->value.floatValue;
+    s->top = s->top->next;
+    free(temp);
+    return value;
 }
 
-int evaluate(int left, int right, char op) {
-   switch (op) {
-   case '+':
-      return left + right;
-   case '-':
-      return left - right;
-   case '*':
-      return left * right;
-   case '/':
-      return left / right;
-   default:
-      return 0;
-   }
+char topOperator(Stack* s)
+{
+    if (IsEmpty(s)) {
+        printf("Incorrect input\n");
+        exit(-3);
+    }
+    return (char)s->top->value.intValue;
 }
 
-void count(char* str, Stack* output) {
-   Stack* operatorStack = createStack();
-   for (int i = 0; str[i] != '\0'; i++) {
-      char current = str[i];
-
-      if (isdigit(current)) {
-         int num = 0;
-         while (isdigit(current)) {
-            num = num * 10 + (current - '0');
-            current = str[++i];
-         }
-         push(output, num);
-         i--; //!!!!!!! 
-      }
-      else if (current == '(') {
-         push(operatorStack, current);
-      }
-      else if (current == ')') {
-         while (!IsEmpty(operatorStack) && top(operatorStack) != '(') {
-            char op = pop(operatorStack);
-            int right = pop(output);
-            int left = pop(output);
-            int result = evaluate(left, right, op);
-            push(output, result);
-         }
-         pop(operatorStack); // delete '(' 
-      }
-      else if (current == '+' || current == '-' || current == '*' || current == '/') {
-         while (!IsEmpty(operatorStack) && precedence(top(operatorStack)) >= precedence(current)) {
-            char op = pop(operatorStack);
-            int right = pop(output);
-            int left = pop(output);
-            int result = evaluate(left, right, op);
-            push(output, result);
-         }
-         push(operatorStack, current);
-      }
-   }
-
-   while (!IsEmpty(operatorStack)) {
-      char op = pop(operatorStack);
-      int right = pop(output);
-      int left = pop(output);
-      int result = evaluate(left, right, op);
-      push(output, result);
-   }
-
-   free(operatorStack);
+int precedence(char op)
+{
+    if (op == '+' || op == '-') {
+        return 1;
+    }
+    if (op == '*' || op == '/') {
+        return 2;
+    }
+    return 0;
 }
 
-int evaluatePostfix(Stack* output) {
-   if (IsEmpty(output)) {
-      printf("empty stack\n");
-      return 0;
-   }
-   return pop(output);
+bool isInRange(long int value)
+{
+    return (value >= MIN_VALUE && value <= MAX_VALUE);
 }
 
-void freeStack(Stack* s) {
-   while (!IsEmpty(s)) {
-      pop(s);
-   }
-   free(s);
+bool isInRangeFloat(double value)
+{
+    return (value >= MIN_VALUE && value <= MAX_VALUE);
 }
 
-int main() {
-   char str[EXP_LEN];
-   //fgets(str, EXP_LEN, stdin);
-   //str[strcspn(str, "\n")] = 0;
+long int evaluateInt(long int left, long int right, char op)
+{
+    long int result = 0;
+    switch (op) {
+    case '+':
+        result = left + right;
+        break;
+    case '-':
+        result = left - right;
+        break;
+    case '*':
+        result = left * right;
+        break;
+    case '/':
+        if (right == 0) {
+            printf("Division by zero is forbidden\n");
+            exit(-1);
+        }
+        result = left / right;
+        break;
+    default:
+        printf("Unknown operator: \n");
+        exit(-2);
+    }
 
-   //Stack* output = createStack();
-   //count(str, output);
+    if (!isInRange(result)) {
+        printf("Intermediate result out of range\n");
+        exit(-1);
+    }
 
-   //int result = evaluatePostfix(output);
-   //printf("%d\n", result);
+    return result;
+}
 
-   //freeStack(output);
+double evaluateFloat(double left, double right, char op)
+{
+    double result = 0;
+    switch (op) {
+    case '+':
+        result = left + right;
+        break;
+    case '-':
+        result = left - right;
+        break;
+    case '*':
+        result = left * right;
+        break;
+    case '/':
+        if (fabs(right) < 1e-4) {
+            printf("Division by a number less than 10^-4 is forbidden\n");
+            exit(-1);
+        }
+        result = left / right;
+        break;
+    default:
+        printf("Unknown operator\n");
+        exit(-2);
+    }
 
-   while (fgets(str, EXP_LEN, stdin) != NULL) {
-      str[strcspn(str, "\n")] = 0; 
-      Stack* output = createStack();
-      count(str, output);
+    if (!isInRangeFloat(result)) {
+        printf("Intermediate result out of range\n");
+        exit(-1);
+    }
 
-      int result = evaluatePostfix(output);
-      printf("%d\n", result);
+    return result;
+}
 
-      freeStack(output);
-   }
+void count(char* str, Stack* output, bool floatMode)
+{
+    Stack* operatorStack = createStack();
+    for (int i = 0; str[i] != '\0'; i++) {
+        char current = str[i];
 
-   return 0;
+        if (isdigit(current)) {
+            if (floatMode) {
+                double num = 0;
+                while (isdigit(current)) {
+                    num = num * 10 + (current - '0');
+                    current = str[++i];
+                }
+                if (current == '.') {
+                    double fraction = 0.1;
+                    current = str[++i];
+                    while (isdigit(current)) {
+                        num += (current - '0') * fraction;
+                        fraction *= 0.1;
+                        current = str[++i];
+                    }
+                }
+
+                if (!isInRangeFloat(num)) {
+                    printf("Input number out of range: %f\n", num);
+                    exit(-1);
+                }
+                pushFloat(output, num);
+            } else {
+                long int num = 0;
+                while (isdigit(current)) {
+                    num = num * 10 + (current - '0');
+                    current = str[++i];
+                }
+
+                if (!isInRange(num)) {
+                    printf("Input number out of range\n");
+                    exit(-1);
+                }
+                pushInt(output, num);
+            }
+            i--;
+        } else if (current == '(') {
+            pushInt(operatorStack, current);
+        } else if (current == ')') {
+            while (!IsEmpty(operatorStack) && topOperator(operatorStack) != '(') {
+                char op = popInt(operatorStack);
+                if (floatMode) {
+                    double right = popFloat(output);
+                    double left = popFloat(output);
+                    double result = evaluateFloat(left, right, op);
+                    pushFloat(output, result);
+                } else {
+                    long int right = popInt(output);
+                    long int left = popInt(output);
+                    long int result = evaluateInt(left, right, op);
+                    pushInt(output, result);
+                }
+            }
+            popInt(operatorStack); // delete '('
+        } else if (current == '+' || current == '-' || current == '*' || current == '/') {
+            while (!IsEmpty(operatorStack) && precedence(topOperator(operatorStack)) >= precedence(current)) {
+                char op = popInt(operatorStack);
+                if (floatMode) {
+                    double right = popFloat(output);
+                    double left = popFloat(output);
+                    double result = evaluateFloat(left, right, op);
+                    pushFloat(output, result);
+                } else {
+                    long int right = popInt(output);
+                    long int left = popInt(output);
+                    long int result = evaluateInt(left, right, op);
+                    pushInt(output, result);
+                }
+            }
+            pushInt(operatorStack, current);
+        } else {
+            printf("Incorrect input\n");
+            exit(-3);
+        }
+    }
+
+    while (!IsEmpty(operatorStack)) {
+        char op = popInt(operatorStack);
+        if (floatMode) {
+            double right = popFloat(output);
+            double left = popFloat(output);
+            double result = evaluateFloat(left, right, op);
+            pushFloat(output, result);
+        } else {
+            long int right = popInt(output);
+            long int left = popInt(output);
+            long int result = evaluateInt(left, right, op);
+            pushInt(output, result);
+        }
+    }
+
+    free(operatorStack);
+}
+
+void freeStack(Stack* s)
+{
+    while (!IsEmpty(s)) {
+        if (s->top->isFloat) {
+            popFloat(s);
+        } else {
+            popInt(s);
+        }
+    }
+    free(s);
+}
+
+void isValidCharset(char* str)
+{
+    for (int i = 0; str[i] != '\0'; i++) {
+        char c = str[i];
+        if (!isdigit(c) && c != '(' && c != ')' && c != '*' && c != '+' && c != '/' && c != '-' && !isspace(c)) {
+            printf("Incorrect input\n");
+            exit(-3);
+        }
+    }
+    return;
+}
+
+int main(int argc, char* argv[])
+{
+    bool floatMode = false;
+
+    if (argc > 1 && strcmp(argv[1], "--float") == 0) {
+        floatMode = true;
+    }
+
+    char str[EXP_LEN + 1];
+    while (fgets(str, EXP_LEN + 1, stdin) != NULL) {
+        if (strlen(str) > EXP_LEN) {
+            printf("Input data exceeds 1 KiB limit\n");
+            exit(-1);
+        }
+
+        str[strcspn(str, "\n")] = 0;
+        isValidCharset(str);
+        Stack* output = createStack();
+        count(str, output, floatMode);
+
+        if (floatMode) {
+            double result = popFloat(output);
+            printf("%.4f\n", result);
+        } else {
+            long int result = popInt(output);
+            printf("%ld\n", result);
+        }
+
+        freeStack(output);
+    }
+
+    return 0;
 }
