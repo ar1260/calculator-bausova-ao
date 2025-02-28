@@ -186,106 +186,6 @@ double evaluateFloat(double left, double right, char op)
     return result;
 }
 
-void count(char* str, Stack* output, bool floatMode)
-{
-    Stack* operatorStack = createStack();
-    for (int i = 0; str[i] != '\0'; i++) {
-        char current = str[i];
-
-        if (isdigit(current)) {
-            if (floatMode) {
-                double num = 0;
-                while (isdigit(current)) {
-                    num = num * 10 + (current - '0');
-                    current = str[++i];
-                }
-                if (current == '.') {
-                    double fraction = 0.1;
-                    current = str[++i];
-                    while (isdigit(current)) {
-                        num += (current - '0') * fraction;
-                        fraction *= 0.1;
-                        current = str[++i];
-                    }
-                }
-
-                if (!isInRangeFloat(num)) {
-                    printf("Input number out of range: %f\n", num);
-                    exit(-1);
-                }
-                pushFloat(output, num);
-            } else {
-                long int num = 0;
-                while (isdigit(current)) {
-                    num = num * 10 + (current - '0');
-                    current = str[++i];
-                }
-
-                if (!isInRange(num)) {
-                    printf("Input number out of range\n");
-                    exit(-1);
-                }
-                pushInt(output, num);
-            }
-            i--;
-        } else if (current == '(') {
-            pushInt(operatorStack, current);
-        } else if (current == ')') {
-            while (!IsEmpty(operatorStack) && topOperator(operatorStack) != '(') {
-                char op = popInt(operatorStack);
-                if (floatMode) {
-                    double right = popFloat(output);
-                    double left = popFloat(output);
-                    double result = evaluateFloat(left, right, op);
-                    pushFloat(output, result);
-                } else {
-                    long int right = popInt(output);
-                    long int left = popInt(output);
-                    long int result = evaluateInt(left, right, op);
-                    pushInt(output, result);
-                }
-            }
-            popInt(operatorStack); // delete '('
-        } else if (current == '+' || current == '-' || current == '*' || current == '/') {
-            while (!IsEmpty(operatorStack) && precedence(topOperator(operatorStack)) >= precedence(current)) {
-                char op = popInt(operatorStack);
-                if (floatMode) {
-                    double right = popFloat(output);
-                    double left = popFloat(output);
-                    double result = evaluateFloat(left, right, op);
-                    pushFloat(output, result);
-                } else {
-                    long int right = popInt(output);
-                    long int left = popInt(output);
-                    long int result = evaluateInt(left, right, op);
-                    pushInt(output, result);
-                }
-            }
-            pushInt(operatorStack, current);
-        } else {
-            printf("Incorrect input\n");
-            exit(-3);
-        }
-    }
-
-    while (!IsEmpty(operatorStack)) {
-        char op = popInt(operatorStack);
-        if (floatMode) {
-            double right = popFloat(output);
-            double left = popFloat(output);
-            double result = evaluateFloat(left, right, op);
-            pushFloat(output, result);
-        } else {
-            long int right = popInt(output);
-            long int left = popInt(output);
-            long int result = evaluateInt(left, right, op);
-            pushInt(output, result);
-        }
-    }
-
-    free(operatorStack);
-}
-
 void freeStack(Stack* s)
 {
     while (!IsEmpty(s)) {
@@ -296,6 +196,132 @@ void freeStack(Stack* s)
         }
     }
     free(s);
+}
+
+long int countInt(char* str)
+{
+    Stack* output = createStack();
+    Stack* operatorStack = createStack();
+
+    for (int i = 0; str[i] != '\0'; i++) {
+        char current = str[i];
+
+        if (isdigit(current)) {
+            long int num = 0;
+            while (isdigit(current)) {
+                num = num * 10 + (current - '0');
+                current = str[++i];
+            }
+
+            if (!isInRange(num)) {
+                printf("Input number out of range\n");
+                exit(-1);
+            }
+            pushInt(output, num);
+            i--;
+        } else if (current == '(') {
+            pushInt(operatorStack, current);
+        } else if (current == ')') {
+            while (!IsEmpty(operatorStack) && topOperator(operatorStack) != '(') {
+                char op = popInt(operatorStack);
+                long int right = popInt(output);
+                long int left = popInt(output);
+                long int result = evaluateInt(left, right, op);
+                pushInt(output, result);
+            }
+            popInt(operatorStack); // Удаляем '('
+        } else if (current == '+' || current == '-' || current == '*' || current == '/') {
+            while (!IsEmpty(operatorStack) && precedence(topOperator(operatorStack)) >= precedence(current)) {
+                char op = popInt(operatorStack);
+                long int right = popInt(output);
+                long int left = popInt(output);
+                long int result = evaluateInt(left, right, op);
+                pushInt(output, result);
+            }
+            pushInt(operatorStack, current);
+        }
+    }
+
+    while (!IsEmpty(operatorStack)) {
+        char op = popInt(operatorStack);
+        long int right = popInt(output);
+        long int left = popInt(output);
+        long int result = evaluateInt(left, right, op);
+        pushInt(output, result);
+    }
+
+    long int finalResult = popInt(output);
+    freeStack(output);
+    freeStack(operatorStack);
+    return finalResult;
+}
+
+double countFloat(char* str)
+{
+    Stack* output = createStack();
+    Stack* operatorStack = createStack();
+
+    for (int i = 0; str[i] != '\0'; i++) {
+        char current = str[i];
+
+        if (isdigit(current)) {
+            double num = 0;
+            while (isdigit(current)) {
+                num = num * 10 + (current - '0');
+                current = str[++i];
+            }
+            if (current == '.') {
+                double fraction = 0.1;
+                current = str[++i];
+                while (isdigit(current)) {
+                    num += (current - '0') * fraction;
+                    fraction *= 0.1;
+                    current = str[++i];
+                }
+            }
+
+            if (!isInRangeFloat(num)) {
+                printf("Input number out of range: %f\n", num);
+                exit(-1);
+            }
+            pushFloat(output, num);
+            i--;
+        } else if (current == '(') {
+            pushInt(operatorStack, current);
+        } else if (current == ')') {
+            while (!IsEmpty(operatorStack) && topOperator(operatorStack) != '(') {
+                char op = popInt(operatorStack);
+                double right = popFloat(output);
+                double left = popFloat(output);
+                double result = evaluateFloat(left, right, op);
+                pushFloat(output, result);
+            }
+            popInt(operatorStack); // Удаляем '('
+        } else if (current == '+' || current == '-' || current == '*' || current == '/') {
+            while (!IsEmpty(operatorStack) && precedence(topOperator(operatorStack)) >= precedence(current)) {
+                char op = popInt(operatorStack);
+                double right = popFloat(output);
+                double left = popFloat(output);
+                double result = evaluateFloat(left, right, op);
+                pushFloat(output, result);
+            }
+            pushInt(operatorStack, current);
+        }
+    }
+
+    while (!IsEmpty(operatorStack)) {
+        char op = popInt(operatorStack);
+        double right = popFloat(output);
+        double left = popFloat(output);
+        double result = evaluateFloat(left, right, op);
+        pushFloat(output, result);
+    }
+
+    double finalResult = popFloat(output);
+    finalResult = round(finalResult * 10000) / 10000;
+    freeStack(output);
+    freeStack(operatorStack);
+    return finalResult;
 }
 
 void isValidCharset(char* str)
@@ -310,6 +336,7 @@ void isValidCharset(char* str)
     return;
 }
 
+#ifndef TESTING
 int main(int argc, char* argv[])
 {
     bool floatMode = false;
@@ -327,19 +354,16 @@ int main(int argc, char* argv[])
 
         str[strcspn(str, "\n")] = 0;
         isValidCharset(str);
-        Stack* output = createStack();
-        count(str, output, floatMode);
 
         if (floatMode) {
-            double result = popFloat(output);
+            double result = countFloat(str);
             printf("%.4f\n", result);
         } else {
-            long int result = popInt(output);
+            long int result = countInt(str);
             printf("%ld\n", result);
         }
-
-        freeStack(output);
     }
 
     return 0;
 }
+#endif
