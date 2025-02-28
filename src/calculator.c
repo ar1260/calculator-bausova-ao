@@ -135,6 +135,10 @@ long int countInt(char* str)
     }
 
     long int finalResult = popInt(output);
+    if (!IsEmpty(output)) {
+        printf("Incorrect input (digit)\n");
+        exit(-3);
+    }
     freeStack(output);
     freeStack(operatorStack);
     return finalResult;
@@ -203,6 +207,10 @@ double countFloat(char* str)
 
     double finalResult = popFloat(output);
     finalResult = round(finalResult * 10000) / 10000;
+    if (!IsEmpty(output)) {
+        printf("Incorrect input (digit)\n");
+        exit(-3);
+    }
     freeStack(output);
     freeStack(operatorStack);
     return finalResult;
