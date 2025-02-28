@@ -12,12 +12,12 @@ BUILD_DIR = build
 UNIT_TESTS_DIR = tests/unit
 
 # Application
-APP_SRC = $(SRC_DIR)/main.c
-APP_OBJ = $(BUILD_DIR)/main.o
+APP_SRC = $(SRC_DIR)/main.c $(SRC_DIR)/stack.c $(SRC_DIR)/calculator.c
+APP_OBJ = $(BUILD_DIR)/main.o $(BUILD_DIR)/stack.o $(BUILD_DIR)/calculator.o
 APP_EXE = $(BUILD_DIR)/app.exe
 
 # Unit tests
-TEST_SRC = $(UNIT_TESTS_DIR)/tests.cpp 
+TEST_SRC = $(UNIT_TESTS_DIR)/tests.cpp
 TEST_OBJ = $(BUILD_DIR)/tests.o
 TEST_EXE = $(BUILD_DIR)/unit-tests.exe
 
@@ -44,6 +44,10 @@ $(BUILD_DIR)/main.o: $(SRC_DIR)/main.c
 	@mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(BUILD_DIR)/stack.o: $(SRC_DIR)/stack.c
+	@mkdir -p $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 $(BUILD_DIR)/calculator.o: $(SRC_DIR)/calculator.c
 	@mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -57,13 +61,13 @@ $(GTEST_LIB): $(GTEST_DIR)/CMakeLists.txt
 	cd $(GTEST_BUILD) && cmake .. && make
 
 # Build unit tests
-$(TEST_EXE): $(TEST_OBJ) $(GTEST_LIB)
+$(TEST_EXE): $(TEST_OBJ) $(BUILD_DIR)/stack.o $(BUILD_DIR)/calculator.o $(GTEST_LIB)
 	@mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(TEST_LDFLAGS) $(LDFLAGS)
 
 $(BUILD_DIR)/tests.o: $(UNIT_TESTS_DIR)/tests.cpp
 	@mkdir -p $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -DTESTING -c -o $@ $<
 
 clean:
 	rm -rf $(BUILD_DIR)
@@ -73,7 +77,7 @@ run-int: $(APP_EXE)
 
 run-float: $(APP_EXE)
 	@$< --float
-
+	
 run-unit-test: $(TEST_EXE)
 	@$<
 
@@ -83,4 +87,3 @@ format:
 		-name "*.c" -o \
 		-name "*.h" \
 	\) -exec $(CLANG_FORMAT) -i -style=file {} +
-

@@ -1,40 +1,16 @@
 #include <gtest/gtest.h>
 #include <limits.h>
 
+//#include "stack.h"
+//#include "calculator.h"
+
 #define EXP_LEN 1024
 #define MIN_VALUE -2000000000
 #define MAX_VALUE 2000000000
 
-// Подключаем функции из main.c
 extern "C" {
-typedef struct Node {
-    union {
-        long int intValue;
-        double floatValue;
-    } value;
-    bool isFloat;
-    struct Node* next;
-} Node;
-
-typedef struct {
-    Node* top;
-} Stack;
-
-Stack* createStack();
-bool IsEmpty(Stack* s);
-void pushInt(Stack* s, long int value);
-void pushFloat(Stack* s, double value);
-long int popInt(Stack* s);
-double popFloat(Stack* s);
-char topOperator(Stack* s);
-void freeStack(Stack* s);
-bool isInRange(long int value);
-bool isInRangeFloat(double value);
-int precedence(char op);
-long int evaluateInt(long int left, long int right, char op);
-double evaluateFloat(double left, double right, char op);
-double countFloat(char* str);
-long int countInt(char* str);
+#include "../../src/calculator.h"
+#include "../../src/stack.h"
 }
 
 // createStack test
@@ -80,7 +56,7 @@ TEST(StackTest, PushPopFloatTest)
     freeStack(s);
 }
 
-// toroperator tests
+// topOperator tests
 TEST(StackTest, TopOperatorTest)
 {
     Stack* s = createStack();
@@ -160,10 +136,4 @@ TEST(CountTest, CountFloatTest)
     ASSERT_DOUBLE_EQ(countFloat(expr3), 11.125);
     char expr4[] = "123.45 * 0";
     ASSERT_DOUBLE_EQ(countFloat(expr4), 0.0);
-}
-
-int main(int argc, char** argv)
-{
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }
