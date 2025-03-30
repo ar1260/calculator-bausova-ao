@@ -37,7 +37,11 @@ PYTHON = $(VENV)/bin/python
 PIP = $(VENV)/bin/pip
 INT_TEST_DIR = tests/integration
 
-.PHONY: all clean run-app run-unit-test format venv run-integration-tests
+# Python GUI and server
+GUI_SCRIPT = gui.py
+SERVER_SCRIPT = server.py
+
+.PHONY: all clean run-app run-unit-test format venv run-integration-tests run-server run-gui
 
 all: $(APP_EXE) $(TEST_EXE)
 
@@ -83,7 +87,7 @@ run-int: $(APP_EXE)
 
 run-float: $(APP_EXE)
 	@$< --float
-	
+
 run-unit-test: $(TEST_EXE)
 	@$<
 
@@ -93,11 +97,17 @@ format:
 		-name "*.c" -o \
 		-name "*.h" \
 	\) -exec $(CLANG_FORMAT) -i -style=file {} +
-	
+
 $(VENV):
 	@python3 -m venv $(VENV)
 	@$(PIP) install --upgrade pip
-	@$(PIP) install pytest
+	@$(PIP) install pytest PySide6 structlog requests
+
+run-server: $(VENV)
+	@$(PYTHON) $(SERVER_SCRIPT)
+
+run-gui: $(VENV)
+	@$(PYTHON) $(GUI_SCRIPT)
 
 run-integration-tests: $(VENV)
 	@$(PYTHON) -m pytest $(INT_TEST_DIR)
